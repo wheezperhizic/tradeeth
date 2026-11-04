@@ -1,6 +1,7 @@
 {
-  "name": "escrow-frontend",
+  "name": "trade",
   "version": "0.2.0",
+  "description": "Secure Ethereum mainnet escrow for Eth trades",
   "private": true,
   "scripts": {
     "dev": "next dev",
