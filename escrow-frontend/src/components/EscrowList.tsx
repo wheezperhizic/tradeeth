@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Escrow } from "@/types";
 import { useRouter } from "next/navigation";
 
+
 interface EscrowListProps {
   escrows: Escrow[];
   account: string;
@@ -96,7 +97,7 @@ export const EscrowList: React.FC<EscrowListProps> = ({ escrows, account }) => {
                   Amount
                 </span>
                 <span className="text-lg font-bold text-indigo-600">
-                  {escrow.amount} ETH
+                  {escrow.amount}
                 </span>
               </div>
               <button

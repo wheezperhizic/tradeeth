@@ -1,0 +1,3 @@
+[submodule "escrow/lib/openzeppelin-contracts"]
+	path = escrow/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

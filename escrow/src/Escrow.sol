@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
-contract Escrow {
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract Escrow is ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     enum Status { Created, Funded, ServiceRendered, Completed, Disputed }
 
     struct EscrowDetail {
         address payable buyer;
         address payable seller;
         uint256 amount;
+        address tokenAddress; // address(0) means Native Coin (ETH/MATIC)
         Status status;
     }
 
@@ -16,12 +23,13 @@ contract Escrow {
     mapping(uint256 => EscrowDetail) public escrows;
     uint256 public escrowCount;
 
-    event EscrowCreated(uint256 indexed escrowId, address buyer, address seller, uint256 amount);
+    event EscrowCreated(uint256 indexed escrowId, address buyer, address seller, uint256 amount, address tokenAddress);
     event EscrowFunded(uint256 indexed escrowId);
     event ServiceRendered(uint256 indexed escrowId);
     event EscrowCompleted(uint256 indexed escrowId);
     event EscrowDisputed(uint256 indexed escrowId);
     event EscrowSettled(uint256 indexed escrowId, address winner);
+    event FeeUpdated(uint256 newFee);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can perform this action");
@@ -29,39 +37,45 @@ contract Escrow {
     }
 
     constructor() {
-    admin = msg.sender;
+        admin = msg.sender;
     }
 
-    // Add this new function to update the fee safely
     function setFee(uint256 _newFee) external onlyAdmin {
-        require(_newFee <= 10, "Fee cannot exceed 10%"); // Safety cap
-        platformFeePercent = _newFee;
+    require(_newFee <= 10, "Fee cannot exceed 10%");
+    platformFeePercent = _newFee;
+    emit FeeUpdated(_newFee); // <--- ADD THIS LINE
     }
 
-    function createEscrow(address payable _seller) external payable returns (uint256) {
-        require(msg.value > 0, "Amount should be greater than zero");
+    // UPDATED: Now accepts ERC20 tokens OR Native Coins
+    function createEscrow(address payable _seller, address _tokenAddress, uint256 _amount) external payable nonReentrant returns (uint256) {
+        if (_tokenAddress == address(0)) {
+            // Native Coin (ETH/MATIC)
+            require(msg.value == _amount && _amount > 0, "Invalid native amount");
+        } else {
+            // ERC20 Token
+            require(msg.value == 0, "Do not send native value for ERC20");
+            require(_amount > 0, "Amount must be greater than zero");
+            // Transfer tokens from buyer to this contract
+            IERC20(_tokenAddress).safeTransferFrom(msg.sender, address(this), _amount);
+        }
+
         escrowCount++;
         escrows[escrowCount] = EscrowDetail({
             buyer: payable(msg.sender),
             seller: _seller,
-            amount: msg.value,
+            amount: _amount,
+            tokenAddress: _tokenAddress,
             status: Status.Funded
         });
 
-        emit EscrowCreated(escrowCount, msg.sender, _seller, msg.value);
+        emit EscrowCreated(escrowCount, msg.sender, _seller, _amount, _tokenAddress);
         return escrowCount;
     }
 
-    function fundEscrow(uint256 _escrowId) external {
-        EscrowDetail storage escrow = escrows[_escrowId];
-        require(escrow.status == Status.Created, "Escrow is not in Created status");
-        require(msg.sender == escrow.buyer, "Only buyer can fund the escrow");
+    // Removed fundEscrow() because funds are locked directly in createEscrow.
+    // If you need a two-step process, let me know, but direct funding is safer.
 
-        escrow.status = Status.Funded;
-        emit EscrowFunded(_escrowId);
-    }
-
-    function renderService(uint256 _escrowId) external {
+    function renderService(uint256 _escrowId) external nonReentrant {
         EscrowDetail storage escrow = escrows[_escrowId];
         require(escrow.status == Status.Funded, "Escrow is not in Funded status");
         require(msg.sender == escrow.seller, "Only seller can render service");
@@ -70,31 +84,26 @@ contract Escrow {
         emit ServiceRendered(_escrowId);
     }
 
-    function releaseFunds(uint256 _escrowId) external {
-        EscrowDetail storage escrow = escrows[_escrowId];
-        require(escrow.status == Status.ServiceRendered, "Escrow is not in ServiceRendered status");
-        require(msg.sender == escrow.buyer, "Only buyer can release funds");
+    function releaseFunds(uint256 _escrowId) external nonReentrant {
+    EscrowDetail storage escrow = escrows[_escrowId];
+    require(escrow.status == Status.ServiceRendered, "Escrow is not in ServiceRendered status");
+    require(msg.sender == escrow.buyer, "Only buyer can release funds");
 
-       // Calculate fee and the remaining amount for the seller
-        uint256 feeAmount = (escrow.amount * platformFeePercent) / 100;
-        uint256 sellerAmount = escrow.amount - feeAmount;
+    uint256 feeAmount = (escrow.amount * platformFeePercent) / 100;
+    uint256 sellerAmount = escrow.amount - feeAmount;
 
-        // Transfer funds safely using .call
-        (bool feeSuccess, ) = payable(admin).call{value: feeAmount}("");
-        require(feeSuccess, "Fee transfer failed");
+    // 1. UPDATE STATUS & EMIT EVENT FIRST
+    escrow.status = Status.Completed;
+    emit EscrowCompleted(_escrowId);
 
-        (bool sellerSuccess, ) = escrow.seller.call{value: sellerAmount}("");
-        require(sellerSuccess, "Seller transfer failed");
-
-        escrow.status = Status.Completed;
-        emit EscrowCompleted(_escrowId);
+    // 2. THEN SEND THE MONEY
+    _transferFunds(escrow.tokenAddress, payable(admin), feeAmount);
+    _transferFunds(escrow.tokenAddress, escrow.seller, sellerAmount);
     }
 
-    function openDispute(uint256 _escrowId) external {
+    function openDispute(uint256 _escrowId) external nonReentrant {
         EscrowDetail storage escrow = escrows[_escrowId];
         
-        // ✅ FIX: Buyer can dispute if it's Funded OR ServiceRendered. 
-        // Seller can only dispute if it's ServiceRendered.
         if (msg.sender == escrow.buyer) {
             require(escrow.status == Status.Funded || escrow.status == Status.ServiceRendered, "Invalid status for buyer dispute");
         } else if (msg.sender == escrow.seller) {
@@ -102,27 +111,39 @@ contract Escrow {
         } else {
             revert("Only buyer or seller can open dispute");
         }
-        
+
         escrow.status = Status.Disputed;
         emit EscrowDisputed(_escrowId);
-}
+    }
 
-    function settleDispute(uint256 _escrowId, address payable _winner) external onlyAdmin {
-        EscrowDetail storage escrow = escrows[_escrowId];
-        require(escrow.status == Status.Disputed, "Escrow is not in Disputed status");
+    function settleDispute(uint256 _escrowId, address payable _winner) external nonReentrant onlyAdmin {
+    EscrowDetail storage escrow = escrows[_escrowId];
+    require(escrow.status == Status.Disputed, "Escrow is not in Disputed status");
 
-        // Calculate fee and the remaining amount for the winner
-            uint256 feeAmount = (escrow.amount * platformFeePercent) / 100;
-            uint256 winnerAmount = escrow.amount - feeAmount;
+    uint256 feeAmount = (escrow.amount * platformFeePercent) / 100;
+    uint256 winnerAmount = escrow.amount - feeAmount;
 
-        // Transfer funds safely using .call
-            (bool feeSuccess, ) = payable(admin).call{value: feeAmount}("");
-            require(feeSuccess, "Fee transfer failed");
+    // 1. UPDATE STATUS & EMIT EVENT FIRST
+    escrow.status = Status.Completed;
+    emit EscrowSettled(_escrowId, _winner);
 
-            (bool winnerSuccess, ) = _winner.call{value: winnerAmount}("");
-            require(winnerSuccess, "Winner transfer failed");
+    // 2. THEN SEND THE MONEY
+    _transferFunds(escrow.tokenAddress, payable(admin), feeAmount);
+    _transferFunds(escrow.tokenAddress, _winner, winnerAmount);
+    }
 
-        escrow.status = Status.Completed;
-        emit EscrowSettled(_escrowId, _winner);
-    }   
+    // Internal helper function to handle both ERC20 and Native transfers safely
+    function _transferFunds(address _tokenAddress, address payable _to, uint256 _amount) internal {
+        if (_amount == 0) return;
+
+        if (_tokenAddress == address(0)) {
+            // Native transfer
+            // forge-lint: disable-next-line(arbitrary-send-eth)
+            (bool success, ) = _to.call{value: _amount}("");
+            require(success, "Native transfer failed");
+        } else {
+            // ERC20 transfer
+            IERC20(_tokenAddress).safeTransfer(_to, _amount);
+        }
+    }
 }

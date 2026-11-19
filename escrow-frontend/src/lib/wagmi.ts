@@ -1,31 +1,31 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 import { http, createStorage } from "wagmi";
-import { mainnet } from "wagmi/chains";
+import { sepolia } from "wagmi/chains"; // <-- We use Sepolia now, not Anvil
 
 // Fetch the project ID from environment variables.
-// Users running this demo locally should create their own Project ID at cloud.reown.com
-// and define NEXT_PUBLIC_WC_PROJECT_ID in their .env.local file.
 const walletConnectProjectId =
-  process.env.NEXT_PUBLIC_WC_PROJECT_ID || "fb56fb90c391038f9a2ffbce64d9268d";
+  process.env.NEXT_PUBLIC_WC_PROJECT_ID || "b1fad54365121aeb4cb8ea89539026df"; // Keep your existing ID here
 
 if (!process.env.NEXT_PUBLIC_WC_PROJECT_ID) {
   console.warn(
-    "Wagmi Warning: NEXT_PUBLIC_WC_PROJECT_ID is not configured in environment variables. " +
-      "WalletConnect might throw allowlist/origin errors on localhost. " +
-      "Please create an app at https://cloud.reown.com and set NEXT_PUBLIC_WC_PROJECT_ID in .env.local"
+    "Wagmi Warning: NEXT_PUBLIC_WC_PROJECT_ID is not configured in environment variables."
   );
 }
 
 export const config = getDefaultConfig({
-  appName: "PayGig",
+  appName: "PayMe",
   projectId: walletConnectProjectId,
-  chains: [mainnet],
-  transports: { // <--- ADD THIS ENTIRE BLOCK
-    [mainnet.id]: http('https://eth-mainnet.g.alchemy.com/v2/alch_rFp0ammisNNtNTQS7gCDH'),
+  
+  // 1. Tell Wagmi to use the Sepolia testnet
+  chains: [sepolia], 
+  
+  transports: {
+    // 2. Give it the Alchemy URL to talk to the Sepolia network
+    [sepolia.id]: http("https://eth-sepolia.g.alchemy.com/v2/alch_BBYWr_EyELzeHf05BFu3a"), 
   },
-   // Only use localStorage if we are in the browser
+  
   storage: createStorage({
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storage: typeof window !== "undefined" ? window.localStorage : undefined,
   }),
   ssr: true,
 });

@@ -1,7 +1,7 @@
 {
-  "name": "trade",
+  "name": "PayMe",
   "version": "0.2.0",
-  "description": "Secure Ethereum mainnet escrow for Eth trades",
+  "description": "Secure Ethereum mainnet escrow for Eth and ERC20 trades",
   "private": true,
   "scripts": {
     "dev": "next dev",

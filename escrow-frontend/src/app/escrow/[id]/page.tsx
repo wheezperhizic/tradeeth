@@ -5,7 +5,6 @@ import { useAccount } from "wagmi";
 import {
   useReadEscrowEscrows,
   useReadEscrowAdmin,
-  useWriteEscrowFundEscrow,
   useWriteEscrowRenderService,
   useWriteEscrowReleaseFunds,
   useWriteEscrowOpenDispute,
@@ -19,6 +18,8 @@ import { CONTRACT_ADDRESS } from "@/constants";
 import { formatEther } from "viem";
 import { toast } from "react-hot-toast";
 import { EscrowChat } from "@/components/EscrowChat";
+import { formatUnits } from "viem";
+import { TOKENS } from "@/constants";
 
 const STATUS_MAP = ["Created", "Funded", "ServiceRendered", "Completed", "Disputed"] as const;
 
@@ -57,36 +58,20 @@ const EscrowPage = () => {
   useWatchEscrowEscrowSettledEvent(eventConfig);
 
   // Write Hooks (No .wait() needed here, wagmi handles the state)
-  const { writeContractAsync: fundEscrow, isPending: isFunding } = useWriteEscrowFundEscrow();
+  //const { writeContractAsync: fundEscrow, isPending: isFunding } = useWriteEscrowFundEscrow();
   const { writeContractAsync: renderService, isPending: isRendering } = useWriteEscrowRenderService();
   const { writeContractAsync: releaseFunds, isPending: isReleasing } = useWriteEscrowReleaseFunds();
   const { writeContractAsync: openDispute, isPending: isDisputing } = useWriteEscrowOpenDispute();
 
-  const isPending = isFunding || isRendering || isReleasing || isDisputing;
+  const isPending = isRendering || isReleasing || isDisputing;
 
   const handleAction = async (action: string) => {
   if (!id) return;
   const toastId = toast.loading(`${action} in progress...`);
 
   try {
-    if (action === "fund") {
-      await fundEscrow({ 
-        address: CONTRACT_ADDRESS as `0x${string}`, 
-        args: [escrowId] 
-      });
-      
-      await fetch('/api/notify-bot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'funded', 
-          escrowId: escrowId.toString(), 
-          buyerWallet: account, // <--- ADDED
-          amount: escrowData?.[2] ? formatEther(escrowData[2]) : "Unknown" 
-        }),
-      });
-    } 
-    else if (action === "renderService") {
+    
+    if (action === "renderService") {
       await renderService({ 
         address: CONTRACT_ADDRESS as `0x${string}`, 
         args: [escrowId] 
@@ -146,12 +131,31 @@ const EscrowPage = () => {
 
   if (!mounted || isReading) return <div className="text-center py-12">Loading...</div>;
   if (!escrowData || escrowData[0] === "0x0000000000000000000000000000000000000000") return <div className="text-center py-12 text-red-500">Escrow not found</div>;
-
-  const [buyer, seller, amount, statusNum] = escrowData;
+  const [buyer, seller, amountRaw, tokenAddress , statusNum] = escrowData;
   const status = STATUS_MAP[statusNum] || "Unknown";
   const isBuyer = account?.toLowerCase() === buyer.toLowerCase();
   const isSeller = account?.toLowerCase() === seller.toLowerCase();
+  // Dynamic formatting for the details page
+  let formattedAmount = "";
+  let symbol = "ETH";
 
+  if (!tokenAddress || tokenAddress === "0x0000000000000000000000000000000000000000") {
+    formattedAmount = formatUnits(amountRaw, 18);
+    symbol = "ETH";
+  } else {
+    // Look up the token in constants
+    const foundToken = Object.values(TOKENS).find(
+      (t) => t.address.toLowerCase() === tokenAddress.toLowerCase()
+    );
+    
+    if (foundToken) {
+      formattedAmount = formatUnits(amountRaw, foundToken.decimals);
+      symbol = foundToken.symbol;
+    } else {
+      formattedAmount = formatUnits(amountRaw, 18); 
+      symbol = "TOKEN";
+    }
+  }
   return (
     <div className="max-w-4xl mx-auto space-y-8 mt-6">
       <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-xl backdrop-blur-md">
@@ -166,15 +170,11 @@ const EscrowPage = () => {
         <div className="space-y-3 mb-8 text-gray-300">
           <p><strong>Seller:</strong> {seller}</p>
           <p><strong>Buyer:</strong> {buyer}</p>
-          <p><strong>Amount:</strong> <span className="text-2xl font-bold text-indigo-400">{formatEther(amount)} ETH</span></p>
+          <p><strong>Amount:</strong> <span className="text-2xl font-bold text-indigo-400">{formattedAmount} {symbol}</span></p>
         </div>
 
         <div className="flex gap-4 flex-wrap">
-          {status === "Created" && isBuyer && (
-            <button onClick={() => handleAction("fund")} disabled={isPending} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold disabled:opacity-50">
-              {isFunding ? "Funding..." : "Fund Escrow"}
-            </button>
-          )}
+          
           
           {status === "Funded" && isSeller && (
             <button onClick={() => handleAction("renderService")} disabled={isPending} className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg font-bold disabled:opacity-50">

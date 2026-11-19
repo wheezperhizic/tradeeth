@@ -1,10 +1,9 @@
 "use client";
-import { parseEventLogs, parseEther } from "viem"; // Add this import at the top
+import { parseEventLogs, parseUnits, erc20Abi } from "viem";
 import { escrowAbi } from "@/lib/generated";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAccount, useWaitForTransactionReceipt } from "wagmi";
-import { useWriteEscrowCreateEscrow } from "@/lib/generated";
-import { CONTRACT_ADDRESS } from "@/constants";
+import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { CONTRACT_ADDRESS, TOKENS } from "@/constants";
 import { useState, useEffect, useRef, Suspense } from "react";
 
 
@@ -20,7 +19,11 @@ function CreateContent() {
   const seller = searchParams.get("seller");
   const amount = searchParams.get("amount");
 
-  const { writeContractAsync: createEscrow } = useWriteEscrowCreateEscrow();
+  const { writeContractAsync } = useWriteContract();
+
+  // Add the token selector state
+  const [selectedToken, setSelectedToken] = useState<keyof typeof TOKENS>("NATIVE");
+  const tokenInfo = TOKENS[selectedToken];
   // --- ADD STEP 4 HERE ---
   const { 
   data: receipt, // 👈 Add this to get the transaction receipt
@@ -84,69 +87,118 @@ const hasProcessedSuccess = useRef(false);
   }
 }, [isConfirmed, receipt, router, seller, amount, address]); // Clean dependency array
 
-const handlePay = async () => {
-  // 1. Guard clause to ensure seller and amount exist
-  if (!seller || !amount) {
-    setStatus("Missing seller or amount parameters.");
-    return;
-  }
-  
-  setStatus("Creating and Funding Escrow...");
-
+const handleApprove = async () => {
+  if (!amount) return;
   try {
-    // 2. Send the transaction WITH the value attached
-    const hash = await createEscrow({
-      address: CONTRACT_ADDRESS as `0x${string}`,
-      args: [seller as `0x${string}`],
-      // 👇 This is the line that fixes the Anvil error
-      value: parseEther(amount as string), 
+    setStatus(`Approving ${tokenInfo.symbol}...`);
+    const parsedAmount = parseUnits(amount as string, tokenInfo.decimals);
+    
+    await writeContractAsync({
+      address: tokenInfo.address as `0x${string}`,
+      abi: erc20Abi,
+      functionName: "approve",
+      args: [CONTRACT_ADDRESS as `0x${string}`, parsedAmount],
     });
-
-    // 3. Save the hash to state so the UI waits for it
-    setTxHash(hash);
-    setStatus("Waiting for blockchain confirmation...");
-
+    setStatus("Approval successful! You can now create the escrow.");
   } catch (error: any) {
-    console.error("Transaction Error:", error);
-    // If MetaMask rejects it, or if the contract reverts
-    setStatus(error.shortMessage || "Transaction failed or rejected.");
-    setTxHash(undefined); // Reset hash so they can try again
+    console.error(error);
+    setStatus(error.shortMessage || "Approval failed.");
   }
 };
+
+    const handlePay = async () => {
+      if (!seller || !amount) {
+        setStatus("Missing seller or amount parameters.");
+        return;
+      }
+
+      setStatus(`Creating Escrow with ${tokenInfo.symbol}...`);
+
+      try {
+        // This correctly handles 6 decimals for USDC and 18 for ETH
+        const parsedAmount = parseUnits(amount as string, tokenInfo.decimals);
+
+        const hash = await writeContractAsync({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi: escrowAbi,
+          functionName: "createEscrow",
+          args: [
+            seller as `0x${string}`, 
+            tokenInfo.address as `0x${string}`, 
+            parsedAmount
+          ],
+          // Only attach ETH value if they selected the Native coin
+          value: selectedToken === "NATIVE" ? parsedAmount : undefined,
+        });
+
+        setTxHash(hash);
+        setStatus("Waiting for blockchain confirmation...");
+      } catch (error: any) {
+        console.error("Transaction Error:", error);
+        setStatus(error.shortMessage || "Transaction failed or rejected.");
+        setTxHash(undefined);
+      }
+    };
 
   if (!seller || !amount) {
     return <div className="text-center text-white mt-20">Invalid Link.</div>;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
-      <div className="bg-slate-800 p-8 rounded-xl shadow-lg max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold mb-4">Complete Escrow Payment</h1>
-        <p className="mb-2"><strong>Seller:</strong> {seller}</p>
-        <p className="mb-6"><strong>Amount:</strong> {amount} ETH</p>
+  <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
+    <div className="bg-slate-800 p-8 rounded-xl shadow-lg max-w-md w-full text-center">
+      <h1 className="text-2xl font-bold mb-4">Complete Escrow Payment</h1>
+      <p className="mb-2"><strong>Seller:</strong> {seller}</p>
+      <p className="mb-6"><strong>Amount:</strong> {amount}</p>
 
-        {!isConnected ? (
-      <p className="text-yellow-400">Please connect your wallet using the button in the top right.</p>
-    ) : isConfirmed ? (
-      // 1. Success State
-      <div className="w-full bg-green-600 text-white font-bold py-3 rounded mt-4">
-        ✅ Escrow Created and Funded!
-      </div>
-    ) : (
-      // 2. Button State (Normal & Confirming)
-      <button
-        onClick={handlePay}
-        disabled={isConfirming || status.includes("ing")}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded disabled:opacity-50 transition-colors"
-      >
-        {isConfirming
-          ? "Waiting for blockchain confirmation..."
-          : (status ? status : "Create Escrow")}
-      </button>
-    )}
-      </div>
+      {!isConnected ? (
+        <p className="text-yellow-400">Please connect your wallet using the button in the top right.</p>
+      ) : isConfirmed ? (
+        <div className="w-full bg-green-600 text-white font-bold py-3 rounded mt-4">
+          ✅ Escrow Created and Funded!
+        </div>
+      ) : (
+        <>
+          {/* Token Selector Dropdown */}
+          <div className="mb-4 mt-6 text-left">
+            <label className="block text-sm font-medium mb-1 text-slate-300">Select Payment Token</label>
+            <select 
+              value={selectedToken}
+              onChange={(e) => setSelectedToken(e.target.value as keyof typeof TOKENS)}
+              className="w-full p-3 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="NATIVE">Native Coin (ETH)</option>
+              <option value="USDC">USDC</option>
+              <option value="USDT">USDT</option>
+            </select>
+          </div>
+
+          {/* Step 1: Approve Button (Only shows for USDC/USDT) */}
+          {selectedToken !== "NATIVE" && (
+            <button
+              onClick={handleApprove}
+              disabled={isConfirming}
+              className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded mb-3 disabled:opacity-50"
+            >
+              Step 1: Approve {tokenInfo.symbol}
+            </button>
+          )}
+
+          {/* Step 2: Create Escrow Button */}
+          <button
+            onClick={handlePay}
+            disabled={isConfirming || status.includes("ing")}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded disabled:opacity-50"
+          >
+            {isConfirming 
+              ? "Waiting for blockchain confirmation..." 
+              : (status ? status : (selectedToken !== "NATIVE" ? `Step 2: Create Escrow with ${tokenInfo.symbol}` : "Create Escrow"))}
+          </button>
+        </>
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 export default function CreatePage() {

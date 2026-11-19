@@ -10,182 +10,7 @@ import {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export const escrowAbi = [
-  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'admin',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_seller', internalType: 'address payable', type: 'address' },
-    ],
-    name: 'createEscrow',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'payable',
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'escrowCount',
-    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
-    name: 'escrows',
-    outputs: [
-      { name: 'buyer', internalType: 'address payable', type: 'address' },
-      { name: 'seller', internalType: 'address payable', type: 'address' },
-      { name: 'amount', internalType: 'uint256', type: 'uint256' },
-      { name: 'status', internalType: 'enum Escrow.Status', type: 'uint8' },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_escrowId', internalType: 'uint256', type: 'uint256' }],
-    name: 'fundEscrow',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_escrowId', internalType: 'uint256', type: 'uint256' }],
-    name: 'openDispute',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_escrowId', internalType: 'uint256', type: 'uint256' }],
-    name: 'releaseFunds',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [{ name: '_escrowId', internalType: 'uint256', type: 'uint256' }],
-    name: 'renderService',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: '_escrowId', internalType: 'uint256', type: 'uint256' },
-      { name: '_winner', internalType: 'address payable', type: 'address' },
-    ],
-    name: 'settleDispute',
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'escrowId',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'EscrowCompleted',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'escrowId',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-      {
-        name: 'buyer',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-      {
-        name: 'seller',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-      {
-        name: 'amount',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: false,
-      },
-    ],
-    name: 'EscrowCreated',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'escrowId',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'EscrowDisputed',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'escrowId',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'EscrowFunded',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'escrowId',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-      {
-        name: 'winner',
-        internalType: 'address',
-        type: 'address',
-        indexed: false,
-      },
-    ],
-    name: 'EscrowSettled',
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      {
-        name: 'escrowId',
-        internalType: 'uint256',
-        type: 'uint256',
-        indexed: true,
-      },
-    ],
-    name: 'ServiceRendered',
-  },
+  {"type":"constructor","inputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"admin","inputs":[],"outputs":[{"name":"","type":"address","internalType":"address"}],"stateMutability":"view"},{"type":"function","name":"createEscrow","inputs":[{"name":"_seller","type":"address","internalType":"address payable"},{"name":"_tokenAddress","type":"address","internalType":"address"},{"name":"_amount","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"payable"},{"type":"function","name":"escrowCount","inputs":[],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"escrows","inputs":[{"name":"","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"buyer","type":"address","internalType":"address payable"},{"name":"seller","type":"address","internalType":"address payable"},{"name":"amount","type":"uint256","internalType":"uint256"},{"name":"tokenAddress","type":"address","internalType":"address"},{"name":"status","type":"uint8","internalType":"enum Escrow.Status"}],"stateMutability":"view"},{"type":"function","name":"openDispute","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"platformFeePercent","inputs":[],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"releaseFunds","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"renderService","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"setFee","inputs":[{"name":"_newFee","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"settleDispute","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"},{"name":"_winner","type":"address","internalType":"address payable"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"event","name":"EscrowCompleted","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"EscrowCreated","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"},{"name":"buyer","type":"address","indexed":false,"internalType":"address"},{"name":"seller","type":"address","indexed":false,"internalType":"address"},{"name":"amount","type":"uint256","indexed":false,"internalType":"uint256"},{"name":"tokenAddress","type":"address","indexed":false,"internalType":"address"}],"anonymous":false},{"type":"event","name":"EscrowDisputed","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"EscrowFunded","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"EscrowSettled","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"},{"name":"winner","type":"address","indexed":false,"internalType":"address"}],"anonymous":false},{"type":"event","name":"FeeUpdated","inputs":[{"name":"newFee","type":"uint256","indexed":false,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"ServiceRendered","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"error","name":"ReentrancyGuardReentrantCall","inputs":[]},{"type":"error","name":"SafeERC20FailedOperation","inputs":[{"name":"token","type":"address","internalType":"address"}]}
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -241,10 +66,10 @@ export const useWriteEscrowCreateEscrow = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link escrowAbi}__ and `functionName` set to `"fundEscrow"`
  */
-export const useWriteEscrowFundEscrow = /*#__PURE__*/ createUseWriteContract({
-  abi: escrowAbi,
-  functionName: 'fundEscrow',
-})
+/*export const useWriteEscrowFundEscrow = /*#__PURE__*/ /*createUseWriteContract({
+/*  abi: escrowAbi,
+ /* functionName: 'fundEscrow',
+/*})
 
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link escrowAbi}__ and `functionName` set to `"openDispute"`
@@ -295,11 +120,11 @@ export const useSimulateEscrowCreateEscrow =
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link escrowAbi}__ and `functionName` set to `"fundEscrow"`
  */
-export const useSimulateEscrowFundEscrow =
-  /*#__PURE__*/ createUseSimulateContract({
+/*export const useSimulateEscrowFundEscrow =
+  /*#__PURE__*/ /*createUseSimulateContract({
     abi: escrowAbi,
     functionName: 'fundEscrow',
-  })
+  })*/
 
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link escrowAbi}__ and `functionName` set to `"openDispute"`
