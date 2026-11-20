@@ -1,6 +1,7 @@
 {
   "name": "PayMe",
   "version": "0.2.0",
+  "packageManager": "pnpm@9.15.0",
   "description": "Secure Ethereum mainnet escrow for Eth and ERC20 trades",
   "private": true,
   "scripts": {
