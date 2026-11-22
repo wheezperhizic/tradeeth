@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useWriteContract } from "wagmi";
 import {
+  escrowAbi,
   useReadEscrowAdmin,
   useWriteEscrowSettleDispute,
   useWatchEscrowEscrowSettledEvent,
@@ -20,7 +21,9 @@ export const AdminPanel: React.FC = () => {
   const { escrows, isLoading: isLoadingEscrows, refetch } = useEscrows();
   const { writeContractAsync: settleDispute } = useWriteEscrowSettleDispute();
   const [mounted, setMounted] = useState(false);
-
+  const [newFee, setNewFee] = useState<string>("");
+  const [isUpdatingFee, setIsUpdatingFee] = useState(false);
+  const { writeContractAsync } = useWriteContract();
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -98,11 +101,60 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
+  const handleSetFee = async () => {
+  if (!newFee) return;
+  setIsUpdatingFee(true);
+  const toastId = toast.loading("Updating platform fee...");
+  
+  try {
+    await writeContractAsync({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: escrowAbi,
+      functionName: "setFee",
+      args: [BigInt(newFee)],
+    });
+    toast.success(`Fee updated to ${newFee}%!`, { id: toastId });
+    setNewFee(""); // clear the input
+  } catch (error: any) {
+    console.error(error);
+    toast.error(error.shortMessage || "Failed to update fee.", { id: toastId });
+  } finally {
+    setIsUpdatingFee(false);
+  }
+};
+
   return (
     <div className="max-w-4xl mx-auto py-6">
       <h1 className="text-3xl font-extrabold mb-6 text-gray-100 border-b border-slate-800 pb-4">
         Admin Panel
       </h1>
+
+          {/* Platform Fee Manager */}
+    <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 mb-8 mt-6">
+      <h2 className="text-xl font-bold text-white mb-2">Platform Fee Settings</h2>
+      <p className="text-slate-400 text-sm mb-4">
+        Change the fee percentage taken when funds are released (Max 10%).
+      </p>
+      <div className="flex items-center gap-4">
+        <input
+          type="number"
+          placeholder="e.g. 3"
+          value={newFee}
+          onChange={(e) => setNewFee(e.target.value)}
+          className="bg-slate-800 border border-slate-600 text-white rounded-lg p-3 w-32 focus:outline-none focus:border-blue-500"
+          min="0"
+          max="10"
+        />
+        <span className="text-slate-300 font-bold">%</span>
+        <button
+          onClick={handleSetFee}
+          disabled={isUpdatingFee || !newFee}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 transition-colors"
+        >
+          {isUpdatingFee ? "Updating..." : "Update Fee"}
+        </button>
+      </div>
+    </div>
       <AdminEscrowList
         escrows={escrows}
         isAdmin={true}
