@@ -6,6 +6,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useReadEscrowAdmin } from "@/lib/generated";
 import { CONTRACT_ADDRESS } from "@/constants";
+import { HelpCircle } from "lucide-react";
 
 export const Navbar = () => {
   const { address: account } = useAccount();
@@ -42,8 +43,8 @@ export const Navbar = () => {
         <Link href="/" className="text-2xl font-bold tracking-wide hover:text-slate-300 transition">
           PayMe
         </Link>
-        <Link href="/support" className="text-sm font-medium text-slate-300 hover:text-white transition-colors ml-6">
-          Support
+        <Link href="/support" className="ml-4 text-slate-400 hover:text-white transition-colors" title="Support">
+          <HelpCircle className="w-6 h-6" />
         </Link>
         <div className="flex items-center space-x-4">
           {isAdmin && (
