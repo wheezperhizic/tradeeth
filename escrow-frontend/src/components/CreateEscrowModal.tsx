@@ -62,6 +62,17 @@ export default function CreateEscrowModal({ isOpen, onClose, onSuccess }: Create
       return;
     }
 
+    // Add this block right below the if (!seller || !amount) check
+    const numAmount = Number(amount);
+    if (selectedToken === "NATIVE" && numAmount < 0.01) {
+      setStatus("Minimum escrow amount is 0.01 ETH to cover network fees.");
+      return;
+    }
+    if (selectedToken !== "NATIVE" && numAmount < 10) {
+      setStatus(`Minimum escrow amount is 10 ${tokenInfo.symbol} to cover network fees.`);
+      return;
+    }
+
     setStatus(`Creating Escrow with ${tokenInfo.symbol}...`);
 
     try {
@@ -143,6 +154,9 @@ export default function CreateEscrowModal({ isOpen, onClose, onSuccess }: Create
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-full p-2 border border-slate-300 rounded focus:outline-none focus:border-blue-500"
               />
+              <p className="text-xs text-slate-500 mt-1 text-left">
+                Minimum: {selectedToken === "NATIVE" ? "0.01 ETH" : `10 ${tokenInfo.symbol}`}
+              </p>
             </div>
 
             {/* Token Selector */}

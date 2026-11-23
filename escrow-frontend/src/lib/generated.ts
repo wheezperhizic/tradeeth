@@ -10,7 +10,381 @@ import {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export const escrowAbi = [
-  {"type":"constructor","inputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"admin","inputs":[],"outputs":[{"name":"","type":"address","internalType":"address"}],"stateMutability":"view"},{"type":"function","name":"createEscrow","inputs":[{"name":"_seller","type":"address","internalType":"address payable"},{"name":"_tokenAddress","type":"address","internalType":"address"},{"name":"_amount","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"payable"},{"type":"function","name":"escrowCount","inputs":[],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"escrows","inputs":[{"name":"","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"buyer","type":"address","internalType":"address payable"},{"name":"seller","type":"address","internalType":"address payable"},{"name":"amount","type":"uint256","internalType":"uint256"},{"name":"tokenAddress","type":"address","internalType":"address"},{"name":"status","type":"uint8","internalType":"enum Escrow.Status"}],"stateMutability":"view"},{"type":"function","name":"openDispute","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"platformFeePercent","inputs":[],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"releaseFunds","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"renderService","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"setFee","inputs":[{"name":"_newFee","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"settleDispute","inputs":[{"name":"_escrowId","type":"uint256","internalType":"uint256"},{"name":"_winner","type":"address","internalType":"address payable"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"event","name":"EscrowCompleted","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"EscrowCreated","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"},{"name":"buyer","type":"address","indexed":false,"internalType":"address"},{"name":"seller","type":"address","indexed":false,"internalType":"address"},{"name":"amount","type":"uint256","indexed":false,"internalType":"uint256"},{"name":"tokenAddress","type":"address","indexed":false,"internalType":"address"}],"anonymous":false},{"type":"event","name":"EscrowDisputed","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"EscrowFunded","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"EscrowSettled","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"},{"name":"winner","type":"address","indexed":false,"internalType":"address"}],"anonymous":false},{"type":"event","name":"FeeUpdated","inputs":[{"name":"newFee","type":"uint256","indexed":false,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"ServiceRendered","inputs":[{"name":"escrowId","type":"uint256","indexed":true,"internalType":"uint256"}],"anonymous":false},{"type":"error","name":"ReentrancyGuardReentrantCall","inputs":[]},{"type":"error","name":"SafeERC20FailedOperation","inputs":[{"name":"token","type":"address","internalType":"address"}]}
+	{
+		"inputs": [
+			{
+				"internalType": "address payable",
+				"name": "_seller",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_amount",
+				"type": "uint256"
+			}
+		],
+		"name": "createEscrow",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "ReentrancyGuardReentrantCall",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "SafeERC20FailedOperation",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowCompleted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "buyer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			}
+		],
+		"name": "EscrowCreated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowDisputed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowFunded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "winner",
+				"type": "address"
+			}
+		],
+		"name": "EscrowSettled",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newFee",
+				"type": "uint256"
+			}
+		],
+		"name": "FeeUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "MinAmountUpdated",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "openDispute",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "releaseFunds",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "renderService",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "escrowId",
+				"type": "uint256"
+			}
+		],
+		"name": "ServiceRendered",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_newFee",
+				"type": "uint256"
+			}
+		],
+		"name": "setFee",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_amount",
+				"type": "uint256"
+			}
+		],
+		"name": "setMinAmount",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_escrowId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address payable",
+				"name": "_winner",
+				"type": "address"
+			}
+		],
+		"name": "settleDispute",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "escrowCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "escrows",
+		"outputs": [
+			{
+				"internalType": "address payable",
+				"name": "buyer",
+				"type": "address"
+			},
+			{
+				"internalType": "address payable",
+				"name": "seller",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "enum Escrow.Status",
+				"name": "status",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "minEscrowAmount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "platformFeePercent",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
 ] as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

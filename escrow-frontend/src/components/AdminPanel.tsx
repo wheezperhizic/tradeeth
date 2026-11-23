@@ -22,6 +22,7 @@ export const AdminPanel: React.FC = () => {
   const { writeContractAsync: settleDispute } = useWriteEscrowSettleDispute();
   const [mounted, setMounted] = useState(false);
   const [newFee, setNewFee] = useState<string>("");
+  const [newMinETH, setNewMinETH] = useState<string>("");
   const [isUpdatingFee, setIsUpdatingFee] = useState(false);
   const { writeContractAsync } = useWriteContract();
   useEffect(() => {
@@ -122,6 +123,28 @@ export const AdminPanel: React.FC = () => {
     setIsUpdatingFee(false);
   }
 };
+  const handleSetMinETH = async () => {
+    if (!newMinETH) return;
+    setIsUpdatingFee(true); // Reusing the fee loading state
+    const toastId = toast.loading("Updating minimum ETH...");
+    
+    try {
+      await writeContractAsync({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: escrowAbi,
+        functionName: "setMinAmount",
+        // 0x000... represents Native ETH. We convert the input to Wei (18 zeros)
+        args: ["0x0000000000000000000000000000000000000000", BigInt(Number(newMinETH) * 10**18)],
+      });
+      toast.success(`Minimum ETH updated to ${newMinETH}!`, { id: toastId });
+      setNewMinETH(""); // Clear the input box
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.shortMessage || "Failed to update minimum.", { id: toastId });
+    } finally {
+      setIsUpdatingFee(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto py-6">
@@ -155,6 +178,31 @@ export const AdminPanel: React.FC = () => {
         </button>
       </div>
     </div>
+
+    {/* Minimum ETH Settings */}
+      <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 mb-8">
+        <h2 className="text-xl font-bold text-white mb-2">Minimum Escrow Limit (ETH)</h2>
+        <p className="text-slate-400 text-sm mb-4">
+          Set the minimum amount of ETH a user can put into an escrow.
+        </p>
+        <div className="flex items-center gap-4">
+          <input
+            type="number"
+            placeholder="e.g. 0.01"
+            value={newMinETH}
+            onChange={(e) => setNewMinETH(e.target.value)}
+            className="bg-slate-800 border border-slate-600 text-white rounded-lg p-3 w-32 focus:outline-none focus:border-green-500"
+          />
+          <span className="text-slate-300 font-bold">ETH</span>
+          <button
+            onClick={handleSetMinETH}
+            disabled={isUpdatingFee || !newMinETH}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 transition-colors"
+          >
+            {isUpdatingFee ? "Updating..." : "Update Min ETH"}
+          </button>
+        </div>
+      </div>
       <AdminEscrowList
         escrows={escrows}
         isAdmin={true}
