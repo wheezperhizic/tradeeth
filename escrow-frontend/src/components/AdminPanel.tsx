@@ -8,7 +8,7 @@ import {
   useWriteEscrowSettleDispute,
   useWatchEscrowEscrowSettledEvent,
 } from "@/lib/generated";
-import { CONTRACT_ADDRESS } from "@/constants";
+import { CONTRACT_ADDRESS, TOKENS } from "@/constants";
 import { useEscrows } from "@/lib/hooks/useEscrows";
 import { AdminEscrowList } from "./AdminEscrowList";
 import { toast } from "react-hot-toast";
@@ -23,6 +23,8 @@ export const AdminPanel: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const [newFee, setNewFee] = useState<string>("");
   const [newMinETH, setNewMinETH] = useState<string>("");
+  const [newMinUSDC, setNewMinUSDC] = useState<string>("");
+  const [newMinUSDT, setNewMinUSDT] = useState<string>("");
   const [isUpdatingFee, setIsUpdatingFee] = useState(false);
   const { writeContractAsync } = useWriteContract();
   useEffect(() => {
@@ -123,6 +125,7 @@ export const AdminPanel: React.FC = () => {
     setIsUpdatingFee(false);
   }
 };
+
   const handleSetMinETH = async () => {
     if (!newMinETH) return;
     setIsUpdatingFee(true); // Reusing the fee loading state
@@ -145,6 +148,52 @@ export const AdminPanel: React.FC = () => {
       setIsUpdatingFee(false);
     }
   };
+
+  const handleSetMinUSDC = async () => {
+  if (!newMinUSDC) return;
+  setIsUpdatingFee(true); 
+  const toastId = toast.loading("Updating minimum USDC...");
+  
+  try {
+    await writeContractAsync({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: escrowAbi,
+      functionName: "setMinAmount",
+      // USDC uses 6 decimals, so we multiply by 10**6
+      args: [TOKENS.USDC.address as `0x${string}`, BigInt(Number(newMinUSDC) * 10**6)],
+    });
+    toast.success(`Minimum USDC updated to ${newMinUSDC}!`, { id: toastId });
+    setNewMinUSDC(""); 
+  } catch (error: any) {
+    console.error(error);
+    toast.error(error.shortMessage || "Failed.", { id: toastId });
+  } finally {
+    setIsUpdatingFee(false);
+  }
+};
+
+const handleSetMinUSDT = async () => {
+  if (!newMinUSDT) return;
+  setIsUpdatingFee(true); 
+  const toastId = toast.loading("Updating minimum USDT...");
+  
+  try {
+    await writeContractAsync({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: escrowAbi,
+      functionName: "setMinAmount",
+      // USDT uses 6 decimals
+      args: [TOKENS.USDT.address as `0x${string}`, BigInt(Number(newMinUSDT) * 10**6)],
+    });
+    toast.success(`Minimum USDT updated to ${newMinUSDT}!`, { id: toastId });
+    setNewMinUSDT(""); 
+  } catch (error: any) {
+    console.error(error);
+    toast.error(error.shortMessage || "Failed.", { id: toastId });
+  } finally {
+    setIsUpdatingFee(false);
+  }
+};
 
   return (
     <div className="max-w-4xl mx-auto py-6">
@@ -200,6 +249,50 @@ export const AdminPanel: React.FC = () => {
             className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 transition-colors"
           >
             {isUpdatingFee ? "Updating..." : "Update Min ETH"}
+          </button>
+        </div>
+      </div>
+
+            {/* Minimum USDC Settings */}
+      <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 mb-8">
+        <h2 className="text-xl font-bold text-white mb-2">Minimum Escrow Limit (USDC)</h2>
+        <div className="flex items-center gap-4">
+          <input
+            type="number"
+            placeholder="e.g. 10"
+            value={newMinUSDC}
+            onChange={(e) => setNewMinUSDC(e.target.value)}
+            className="bg-slate-800 border border-slate-600 text-white rounded-lg p-3 w-32 focus:outline-none focus:border-blue-500"
+          />
+          <span className="text-slate-300 font-bold">USDC</span>
+          <button
+            onClick={handleSetMinUSDC}
+            disabled={isUpdatingFee || !newMinUSDC}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 transition-colors"
+          >
+            {isUpdatingFee ? "Updating..." : "Update Min USDC"}
+          </button>
+        </div>
+      </div>
+
+      {/* Minimum USDT Settings */}
+      <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 mb-8">
+        <h2 className="text-xl font-bold text-white mb-2">Minimum Escrow Limit (USDT)</h2>
+        <div className="flex items-center gap-4">
+          <input
+            type="number"
+            placeholder="e.g. 10"
+            value={newMinUSDT}
+            onChange={(e) => setNewMinUSDT(e.target.value)}
+            className="bg-slate-800 border border-slate-600 text-white rounded-lg p-3 w-32 focus:outline-none focus:border-green-500"
+          />
+          <span className="text-slate-300 font-bold">USDT</span>
+          <button
+            onClick={handleSetMinUSDT}
+            disabled={isUpdatingFee || !newMinUSDT}
+            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg disabled:opacity-50 transition-colors"
+          >
+            {isUpdatingFee ? "Updating..." : "Update Min USDT"}
           </button>
         </div>
       </div>
