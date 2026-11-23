@@ -20,6 +20,7 @@ contract Escrow is ReentrancyGuard {
 
     address public admin;
     uint256 public platformFeePercent = 2; // Default 2% fee
+    mapping(address => uint256) public minEscrowAmount;
     mapping(uint256 => EscrowDetail) public escrows;
     uint256 public escrowCount;
 
@@ -30,6 +31,7 @@ contract Escrow is ReentrancyGuard {
     event EscrowDisputed(uint256 indexed escrowId);
     event EscrowSettled(uint256 indexed escrowId, address winner);
     event FeeUpdated(uint256 newFee);
+    event MinAmountUpdated(address token, uint256 amount);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can perform this action");
@@ -37,7 +39,12 @@ contract Escrow is ReentrancyGuard {
     }
 
     constructor() {
-        admin = msg.sender;
+    admin = msg.sender;
+    
+    // Default minimum amounts
+    minEscrowAmount[address(0)] = 0.01 ether; // 0.01 ETH
+    minEscrowAmount[0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238] = 10 * 10**6; // 10 USDC
+    minEscrowAmount[0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0] = 10 * 10**6; // 10 USDT
     }
 
     function setFee(uint256 _newFee) external onlyAdmin {
@@ -46,15 +53,20 @@ contract Escrow is ReentrancyGuard {
     emit FeeUpdated(_newFee); // <--- ADD THIS LINE
     }
 
+    function setMinAmount(address _token, uint256 _amount) external onlyAdmin {
+    minEscrowAmount[_token] = _amount;
+    emit MinAmountUpdated(_token, _amount);
+    }
+
     // UPDATED: Now accepts ERC20 tokens OR Native Coins
     function createEscrow(address payable _seller, address _tokenAddress, uint256 _amount) external payable nonReentrant returns (uint256) {
         if (_tokenAddress == address(0)) {
             // Native Coin (ETH/MATIC)
-            require(msg.value == _amount && _amount > 0, "Invalid native amount");
+            require(msg.value == _amount && _amount >= minEscrowAmount[address(0)], "Amount below minimum");
         } else {
             // ERC20 Token
             require(msg.value == 0, "Do not send native value for ERC20");
-            require(_amount > 0, "Amount must be greater than zero");
+            require(_amount >= minEscrowAmount[_tokenAddress], "Amount below minimum");
             // Transfer tokens from buyer to this contract
             IERC20(_tokenAddress).safeTransferFrom(msg.sender, address(this), _amount);
         }
